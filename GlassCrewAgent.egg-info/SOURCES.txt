@@ -1,0 +1,5 @@
+setup.py
+GlassCrewAgent.egg-info/PKG-INFO
+GlassCrewAgent.egg-info/SOURCES.txt
+GlassCrewAgent.egg-info/dependency_links.txt
+GlassCrewAgent.egg-info/top_level.txt
