@@ -94,8 +94,18 @@ Required environment variables (in `.env`):
 - All tools are custom implementations wrapped as CrewAI tools
 - The `GlassCrew` class in `crew.py` uses the CrewBase decorator pattern
 - Web UI uses Flask with Server-Sent Events (SSE) for real-time progress streaming
+- Uses **CrewAI step_callback** to stream tool-level execution details to the UI
 - Results are automatically saved to `output/` directory with timestamps
 - The manager agent follows a predefined iterative workflow and must validate results before completion
+
+## Web UI Features
+
+- **Two-tab interface**:
+  - *📋 Running Log* - Real-time terminal-style scrolling log showing: which agent is running, which tool was called, tool input/output
+  - *📝 Result View* - Full Markdown rendering of the final report with proper styling for headings, code blocks, tables
+- Automatic switching to result view when execution completes
+- Download button for exporting the final Markdown report
+- Dark theme with gradient background matching the project style
 
 ## Workflow for Inverse Glass Design
 
