@@ -31,14 +31,89 @@ def run_crew_task(task_id, user_input):
     task_info = active_tasks.get(task_id)
     if not task_info:
         return
-    
+
     task_info['status'] = 'running'
-    
+
     try:
         # 获取 crew 实例
         crew = get_crew_instance()
-        
-        # 启动任务 - 虽然CrewAI的kickoff不直接支持回调，我们会在完成后返回结果
+
+        # 定义step回调，实时发送每个步骤信息
+        def process_step(step):
+            """
+            Process each step from CrewAI and send events through SSE.
+            """
+            # Extract step information
+            agent = None
+            action = None
+            tool_name = None
+            tool_input = None
+            tool_output = None
+
+            # Handle different step formats
+            if isinstance(step, dict):
+                agent = step.get('agent')
+                action = step.get('action')
+                tool_name = step.get('tool_name')
+                tool_input = step.get('tool_input')
+                tool_output = step.get('tool_output')
+            else:
+                if hasattr(step, 'agent') and step.agent:
+                    agent = getattr(step.agent, 'role', str(step.agent))
+                if hasattr(step, 'action'):
+                    action = step.action
+                if hasattr(step, 'tool_name'):
+                    tool_name = step.tool_name
+                if hasattr(step, 'tool_input'):
+                    tool_input = step.tool_input
+                if hasattr(step, 'tool_output'):
+                    tool_output = step.tool_output
+
+            # If we have a tool starting, send tool_start event
+            if tool_name and tool_input and not tool_output:
+                event = {
+                    'type': 'tool_start',
+                    'agent': str(agent) if agent else None,
+                    'tool': str(tool_name),
+                    'input': str(tool_input),
+                    'timestamp': str(uuid.uuid4())[:8]
+                }
+                task_info['stream_queue'].put(json.dumps(event))
+            # If we have a tool ending, send tool_end event
+            elif tool_name and tool_output:
+                event = {
+                    'type': 'tool_end',
+                    'agent': str(agent) if agent else None,
+                    'tool': str(tool_name),
+                    'output': str(tool_output),
+                    'timestamp': str(uuid.uuid4())[:8]
+                }
+                task_info['stream_queue'].put(json.dumps(event))
+
+            # Send agent_step event always
+            event = {
+                'type': 'agent_step',
+                'agent': str(agent) if agent else None,
+                'action': str(action) if action else None,
+                'tool': tool_name,
+                'input': str(tool_input) if tool_input else None,
+                'output': str(tool_output) if tool_output else None,
+                'timestamp': str(uuid.uuid4())[:8]
+            }
+            task_info['stream_queue'].put(json.dumps(event))
+
+        # Add step callback for real-time logging
+        crew.step_callback = process_step
+
+        # 发送任务开始事件
+        event = {
+            'type': 'task_start',
+            'task': 'Glass Research Crew 开始处理',
+            'timestamp': str(uuid.uuid4())[:8]
+        }
+        task_info['stream_queue'].put(json.dumps(event))
+
+        # 启动任务
         result = crew.kickoff(inputs={'user_input': user_input})
         
         # 任务完成

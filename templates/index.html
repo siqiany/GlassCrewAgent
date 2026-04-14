@@ -321,7 +321,172 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.3);
         }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: #00d4ff;
+        }
+
+        .tab-btn.active {
+            color: #00d4ff;
+            border-bottom-color: #00d4ff;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Markdown rendering styles for result view */
+        .markdown-body {
+            line-height: 1.7;
+            color: #e0e0e0;
+            padding: 10px 0;
+        }
+
+        .markdown-body h1 {
+            font-size: 2rem;
+            color: #00d4ff;
+            margin: 20px 0 15px 0;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            padding-bottom: 10px;
+        }
+
+        .markdown-body h2 {
+            font-size: 1.6rem;
+            color: #00d4ff;
+            margin: 18px 0 12px 0;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.3rem;
+            color: #00d4ff;
+            margin: 15px 0 10px 0;
+        }
+
+        .markdown-body p {
+            margin-bottom: 15px;
+        }
+
+        .markdown-body ul, .markdown-body ol {
+            margin-bottom: 15px;
+            padding-left: 30px;
+        }
+
+        .markdown-body li {
+            margin-bottom: 5px;
+        }
+
+        .markdown-body code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+        }
+
+        .markdown-body pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+        }
+
+        .markdown-body pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .markdown-body blockquote {
+            border-left: 4px solid #00d4ff;
+            padding-left: 15px;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .markdown-body table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .markdown-body th, .markdown-body td {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+        }
+
+        .markdown-body th {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+        }
+
+        .markdown-body a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+
+        .markdown-body a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-body img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        /* Tool-specific log styles */
+        .log-item.tool_start {
+            border-left-color: #ffaa00;
+        }
+
+        .log-type.tool_start {
+            background: rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+        }
+
+        .log-item.tool_end {
+            border-left-color: #00ff88;
+            border-left-color: #00ff88;
+        }
+
+        .log-type.tool_end {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .process-log {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            min-height: 400px;
+        }
     </style>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -353,23 +518,33 @@
             <div class="process-section">
                 <div class="section-title">
                     <span class="status-indicator" id="statusIndicator"></span>
-                    <span>智能体运行进程</span>
+                    <span>运行状态</span>
                 </div>
-                
-                <div class="process-log" id="processLog">
-                    <div class="empty-state">
-                        <p>等待问题输入...</p>
+
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('log')" id="tabLog">📋 运行日志</button>
+                    <button class="tab-btn" onclick="switchTab('result')" id="tabResult">📝 结果查看</button>
+                </div>
+
+                <div class="tab-content active" id="logTab">
+                    <div class="process-log" id="processLog">
+                        <div class="empty-state">
+                            <p>等待问题输入...</p>
+                        </div>
                     </div>
                 </div>
-                
-                 <div class="result-section" id="resultSection" style="display: none;">
-                     <div class="result-title">📝 最终结果</div>
-                     <div class="result-content" id="resultContent"></div>
-                     <div class="download-section" id="downloadSection" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                         <p style="color: #888; font-size: 0.9rem; margin-bottom: 10px;">💾 报告已自动保存到服务器 output 目录，您也可以下载到本地：</p>
-                         <button id="downloadBtn" onclick="downloadReport()" style="padding: 10px 20px; font-size: 0.9rem; background: linear-gradient(90deg, #00ff88, #00d4ff);">📥 下载 Markdown 报告</button>
-                     </div>
-                 </div>
+
+                <div class="tab-content" id="resultTab">
+                    <div class="markdown-body" id="markdownResult">
+                        <div class="empty-state">
+                            <p>任务完成后结果将在这里显示</p>
+                        </div>
+                    </div>
+                    <div class="download-section" id="downloadSection" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <p style="color: #888; font-size: 0.9rem; margin-bottom: 10px;">💾 报告已自动保存到服务器 output 目录，您也可以下载到本地：</p>
+                        <button id="downloadBtn" onclick="downloadReport()" style="padding: 10px 20px; font-size: 0.9rem; background: linear-gradient(90deg, #00ff88, #00d4ff);">📥 下载 Markdown 报告</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -461,53 +636,76 @@
         // 处理事件
         function handleEvent(event) {
             const logContainer = document.getElementById('processLog');
-            
+
             switch (event.type) {
                 case 'agent_step':
-                    addLogItem('agent_step', 
-                        `Agent: ${event.agent}<br>Step: ${event.step}`,
+                    addLogItem('agent_step',
+                        `Agent: ${event.agent}`,
                         event.action || '',
                         event.input || '',
                         event.output || '');
                     break;
-                    
+
                 case 'task_start':
-                    addLogItem('task_start', 
+                    addLogItem('task_start',
                         `任务开始: ${event.task}`);
                     break;
-                    
+
                 case 'task_complete':
-                    addLogItem('task_complete', 
+                    addLogItem('task_complete',
                         `任务完成: ${event.task}`);
                     break;
-                    
+
+                case 'tool_start':
+                    addLogItem('tool_start',
+                        `工具调用: ${event.tool}`,
+                        '',
+                        event.input || '',
+                        '');
+                    break;
+
+                case 'tool_end':
+                    addLogItem('tool_end',
+                        `工具完成: ${event.tool}`,
+                        '',
+                        '',
+                        event.output || '');
+                    break;
+
                  case 'complete':
                      // 保存结果和文件信息
                      currentResult = event.result;
                      currentOutputFile = event.output_file;
-                     
-                     // 显示最终结果
-                     const resultContent = document.getElementById('resultContent');
-                     resultContent.textContent = event.result;
-                     document.getElementById('resultSection').style.display = 'block';
-                     
+
+                     // 在结果标签页渲染Markdown
+                     const markdownContainer = document.getElementById('markdownResult');
+                     markdownContainer.innerHTML = marked.parse(event.result);
+                     const emptyState = markdownContainer.querySelector('.empty-state');
+                     if (emptyState) {
+                         emptyState.style.display = 'none';
+                     }
+
                      // 如果文件已保存，显示下载按钮
                      if (event.output_file) {
                          document.getElementById('downloadSection').style.display = 'block';
                      }
-                     
-                     // 添加助手消息
-                     addMessage('assistant', event.result);
-                     
+
+                     // 添加助手消息到聊天区
+                     addMessage('assistant', '✅ 任务已完成，请切换到「结果查看」标签查看完整报告');
+
                      updateStatus('completed');
+                     // 自动切换到结果标签
+                     if (event.result) {
+                         setTimeout(() => switchTab('result'), 500);
+                     }
                      break;
-                    
+
                 case 'error':
                     addLogItem('error', `错误: ${event.error}`);
                     addMessage('assistant', '处理出错: ' + event.error);
                     updateStatus('error');
                     break;
-                    
+
                 case 'end':
                     if (eventSource) {
                         eventSource.close();
@@ -554,9 +752,27 @@
                 'agent_step': 'Agent',
                 'task_start': '开始',
                 'task_complete': '完成',
+                'tool_start': '工具',
+                'tool_end': '完成',
                 'error': '错误'
             };
             return labels[type] || type;
+        }
+
+        // 切换标签
+        function switchTab(tabName) {
+            // 移除所有active
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // 添加active到选中标签
+            if (tabName === 'log') {
+                document.getElementById('tabLog').classList.add('active');
+                document.getElementById('logTab').classList.add('active');
+            } else {
+                document.getElementById('tabResult').classList.add('active');
+                document.getElementById('resultTab').classList.add('active');
+            }
         }
         
         // 添加聊天消息
