@@ -1,9 +1,48 @@
-reporting_task:
+glass_research_task:
   description: >
-    Review the context you got and expand each topic into a full section for a report.
-    Make sure the report is detailed and contains any and all relevant information.
+    [CORE TASK] Answer the user's question about glass materials by coordinating with specialized agents.
+
+    User Question: {user_input}
+
+    [WORKFLOW - EXECUTE IN ORDER]
+    1. ANALYZE: Carefully analyze the user's question to understand what information is needed
+    2. PLAN: Decide which agents to delegate to based on the question:
+       - For literature review and academic papers: Delegate to searcher agent
+       - For material properties (density, structure, band gap): Delegate to mp_agent
+       - For generating glass compositions from optical properties: Delegate to composition_generator agent
+       - For electromagnetic simulation: Delegate to fdtd_simulation_agent
+       - For validation: Delegate to reviewer agent
+    3. DELEGATE: Create and assign specific sub-tasks to appropriate agents with clear instructions
+    4. WAIT: Wait for all sub-agents to complete their tasks
+    5. COLLECT: Gather all results from completed sub-tasks
+    6. SYNTHESIZE: Combine all findings into a comprehensive answer
+    7. OUTPUT: Provide the final answer that directly addresses the user's question
+
+    [DECISION GUIDELINES]
+    - Literature queries (papers, reviews, latest research): Use searcher agent with get_paperqa
+    - Property data (density, structure, band gap): Use mp_agent with Materials Project tools
+    - Inverse design: When user wants glass compositions with specific optical properties (refractive index, Abbe number, mean dispersion), always use: searcher → mp_agent → composition_generator → fdtd_simulation_agent → reviewer → manager for final report
+    - FDTD simulation: When user wants electromagnetic simulation of glass structures (transmittance spectrum, field profiles, resonant modes), use fdtd_simulation_agent with Meep tools
+    - Comprehensive queries: Use combination of agents as needed including reviewer for validation
+
+    [KEY GLASS MATERIALS REFERENCE]
+    - Glass formers: SiO2, B2O3, P2O5, GeO2
+    - Network modifiers: Na2O, K2O, CaO, MgO, Al2O3
+    - Optical properties: Refractive index (nd), Abbe number (νd), Mean dispersion (ΔP)
+    - Special types: Optical glass, fiberglass, glass-ceramics
+
+    [CRITICAL REQUIREMENT]
+    Your final output MUST directly answer the user's question with specific data and clear explanations.
+    Always get validation from reviewer for generated compositions before making final recommendations.
   expected_output: >
-    A fully fledge reports with the mains topics, each with a full section of information.
-    Formatted as markdown without '```'
-  agent: reporting_analyst
-  output_file: report.md
+    A complete answer that:
+    - Directly addresses the user's specific question
+    - Includes relevant literature findings (from searcher agent) when requested
+    - Contains material property data (from mp_agent) when requested
+    - Includes generated glass compositions (from composition_generator) when requested
+    - Includes simulation results (from fdtd_simulation_agent) when requested
+    - Includes validation from reviewer
+    - Provides clear analysis connecting all findings
+    - Is formatted in structured sections with specific data points
+  output_file: output/final_glass_report.md
+  agent: manager

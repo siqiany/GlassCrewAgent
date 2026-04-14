@@ -1,0 +1,12 @@
+setup.py
+src/GlassCrewAgent/__init__.py
+src/GlassCrewAgent/crew.py
+src/GlassCrewAgent/main.py
+src/GlassCrewAgent.egg-info/PKG-INFO
+src/GlassCrewAgent.egg-info/SOURCES.txt
+src/GlassCrewAgent.egg-info/dependency_links.txt
+src/GlassCrewAgent.egg-info/top_level.txt
+src/GlassCrewAgent/tools/MPtools.py
+src/GlassCrewAgent/tools/__init__.py
+src/GlassCrewAgent/tools/generalCommon.py
+tests/test_dynamic_routing.py
