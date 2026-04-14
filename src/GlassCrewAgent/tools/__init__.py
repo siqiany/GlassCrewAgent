@@ -31,20 +31,21 @@ from src.GlassCrewAgent.tools.meep_tools import (
     clear_current_simulation,
     get_simulation_output_directory
 )
-from src.GlassCrewAgent.tools.vasp_tools import (
-    test_ssh_connection,
-    list_available_partitions,
-    get_structure_from_mp_by_id,
-    read_poscar_from_file,
-    generate_vasp_input_from_structure,
-    generate_slurm_script,
-    submit_vasp_job,
-    check_job_status,
-    cancel_job,
-    download_vasp_results,
-    parse_vasp_output,
-    run_complete_vasp_calculation_from_mp
-)
+# VASP tools removed for temporary branch
+# from src.GlassCrewAgent.tools.vasp_tools import (
+#     test_ssh_connection,
+#     list_available_partitions,
+#     get_structure_from_mp_by_id,
+#     read_poscar_from_file,
+#     generate_vasp_input_from_structure,
+#     generate_slurm_script,
+#     submit_vasp_job,
+#     check_job_status,
+#     cancel_job,
+#     download_vasp_results,
+#     parse_vasp_output,
+#     run_complete_vasp_calculation_from_mp
+# )
 
 __all__ = [
     "download_papers_from_arxiv_single", 
@@ -81,18 +82,19 @@ __all__ = [
     "find_resonant_frequencies",
     "save_simulation_to_hdf5",
     "clear_current_simulation",
-    "get_simulation_output_directory",
-    "test_ssh_connection",
-    "list_available_partitions",
-    "get_structure_from_mp_by_id",
-    "read_poscar_from_file",
-    "generate_vasp_input_from_structure",
-    "generate_slurm_script",
-    "submit_vasp_job",
-    "check_job_status",
-    "cancel_job",
-    "download_vasp_results",
-    "parse_vasp_output",
-    "run_complete_vasp_calculation_from_mp"
+    "get_simulation_output_directory"
+#     VASP exports removed for temporary branch
+#     "test_ssh_connection",
+#     "list_available_partitions",
+#     "get_structure_from_mp_by_id",
+#     "read_poscar_from_file",
+#     "generate_vasp_input_from_structure",
+#     "generate_slurm_script",
+#     "submit_vasp_job",
+#     "check_job_status",
+#     "cancel_job",
+#     "download_vasp_results",
+#     "parse_vasp_output",
+#     "run_complete_vasp_calculation_from_mp"
 ]
 
