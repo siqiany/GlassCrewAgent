@@ -124,11 +124,14 @@ def run_crew_task(task_id, user_input):
         try:
             # 导入datetime
             from datetime import datetime
+            # 导入文件名 sanitization 函数
+            from src.GlassCrewAgent.crew import sanitize_filename_for_question
             # 确保输出目录存在
             os.makedirs('output', exist_ok=True)
-            # 使用时间戳生成唯一文件名
+            # 使用时间戳生成唯一文件名，包含用户问题的安全版本
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file_path = os.path.join('output', f"final_glass_report_{timestamp}.md")
+            question_slug = sanitize_filename_for_question(user_input)
+            output_file_path = os.path.join('output', f"final_glass_report_{question_slug}_{timestamp}.md")
             # 同时也保存一个固定名称的文件用于最新结果
             fixed_output_path = os.path.join('output', "final_glass_report.md")
             

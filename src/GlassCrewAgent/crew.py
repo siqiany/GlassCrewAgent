@@ -53,6 +53,13 @@ from src.GlassCrewAgent.tools.meep_tools import (
     save_simulation_to_hdf5,
     clear_current_simulation,
     get_simulation_output_directory,
+    read_spectrum_file,
+    read_field_profile,
+    read_resonance_file,
+    plot_transmittance_spectrum,
+    plot_field_profile_1d,
+    plot_field_profile_2d,
+    visualize_meep_output,
 )
 
 # VASP tools removed for temporary branch
@@ -168,7 +175,14 @@ class GlassCrew:
                 find_resonant_frequencies,
                 save_simulation_to_hdf5,
                 clear_current_simulation,
-                get_simulation_output_directory
+                get_simulation_output_directory,
+                read_spectrum_file,
+                read_field_profile,
+                read_resonance_file,
+                plot_transmittance_spectrum,
+                plot_field_profile_1d,
+                plot_field_profile_2d,
+                visualize_meep_output
             ]
         )
     
@@ -177,7 +191,15 @@ class GlassCrew:
         return Agent(
             config=self.agents_config['reviewer'],
             llm=llm,
-            tools=[]
+            tools=[
+                read_spectrum_file,
+                read_field_profile,
+                read_resonance_file,
+                plot_transmittance_spectrum,
+                plot_field_profile_1d,
+                plot_field_profile_2d,
+                visualize_meep_output
+            ]
         )
     
     @agent
@@ -232,6 +254,39 @@ class GlassCrew:
 
 
 # === Backward Compatibility Wrappers ===
+def sanitize_filename_for_question(user_question: str, max_length: int = 50) -> str:
+    """
+    Convert user question to a safe filename.
+
+    Args:
+        user_question: The original user question
+        max_length: Maximum length for the filename part
+
+    Returns:
+        Sanitized filename-safe string
+    """
+    import re
+    # Remove or replace characters that are unsafe in filenames
+    unsafe_chars = r'[<>:"/\\|?*\'\",.;\[\]{}()=+`~!@#$%^&*]'
+    sanitized = re.sub(unsafe_chars, '_', user_question)
+
+    # Replace whitespace with underscores
+    sanitized = re.sub(r'\s+', '_', sanitized)
+
+    # Trim to max_length
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+
+    # Remove trailing underscores
+    sanitized = sanitized.strip('_')
+
+    # If empty after sanitization, use a default
+    if not sanitized:
+        sanitized = "glass_query"
+
+    return sanitized
+
+
 def handle_user_goal(user_input: str) -> Dict[str, Any]:
     """
     Main handler function to process user research requests.
@@ -277,10 +332,11 @@ def handle_user_goal(user_input: str) -> Dict[str, Any]:
         output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "output")
         os.makedirs(output_dir, exist_ok=True)
         
-        # 使用时间戳生成唯一文件名
+        # 使用时间戳生成唯一文件名，包含用户问题的安全版本
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file_path = os.path.join(output_dir, f"final_glass_report_{timestamp}.md")
-        
+        question_slug = sanitize_filename_for_question(user_input)
+        output_file_path = os.path.join(output_dir, f"final_glass_report_{question_slug}_{timestamp}.md")
+
         # 同时也保存一个固定名称的文件用于最新结果
         fixed_output_path = os.path.join(output_dir, "final_glass_report.md")
         

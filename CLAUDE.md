@@ -122,3 +122,20 @@ All final reports are saved as Markdown in:
 - `output/final_glass_report.md` - Latest version
 
 Simulation outputs are stored in `output/meep_simulations/`.
+
+## Development Guidelines
+
+- **Tool Pattern**: All custom tools use the CrewAI `@tool("Tool Name")` decorator pattern. When adding new tools:
+  - Define in `src/GlassCrewAgent/tools/` module
+  - Import all new tools in `src/GlassCrewAgent/crew.py`
+  - Add new tools to the `tools` list of the appropriate agent(s)
+  - Output files must use absolute paths resolved from project root (not relative paths)
+
+- **Meep FDTD Simulation Notes**:
+  - For transmittance calculation: place incident monitor *before* the structure, transmitted monitor *after* the structure
+  - For 2D/3D simulations: `plane_size_y` (and `plane_size_z` for 3D) must be explicitly provided and > 0
+  - Lorentzian dispersion model requires full complex sigma (do not extract `.real`), preserves loss information
+  - Get frequency points from `mp.get_flux_freqs()`, do not manually create with `linspace` when flux data is already available
+  - Validate geometry objects are within simulation cell boundaries before adding
+
+- **Testing**: After modifying tools, always run the corresponding test file: `python -m pytest tests/test_<module_name>.py -v`

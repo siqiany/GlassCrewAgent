@@ -34,9 +34,25 @@ glass_research_task:
     [CRITICAL REQUIREMENT]
     Your final output MUST directly answer the user's question with specific data and clear explanations.
     Always get validation from reviewer for generated compositions before making final recommendations.
+
+    [OUTPUT LANGUAGE REQUIREMENT]
+    You MUST write the entire final report in the SAME LANGUAGE that the user used in their question.
+    - If the user asked in Chinese, the entire report must be in Chinese
+    - If the user asked in English, the entire report must be in English
+    - Do not mix languages - the complete report must match the language of the original question
+
+    [REPORT FORMATTING REQUIREMENT]
+    Your final report MUST begin with a clear section stating the original user question, formatted as:
+
+    # User Question
+
+    {user_input}
+
+    Then proceed with the main report content.
   expected_output: >
     A complete answer that:
-    - Directly addresses the user's specific question
+    - Begins with a clearly marked "# User Question" section containing the original user question
+    - Directly addresses the user's specific question in the same language as the original question
     - Includes relevant literature findings (from searcher agent) when requested
     - Contains material property data (from mp_agent) when requested
     - Includes generated glass compositions (from composition_generator) when requested
