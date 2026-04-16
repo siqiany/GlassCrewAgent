@@ -289,9 +289,9 @@ def generate_vasp_input_from_structure(
     """
     try:
         from pymatgen.core.structure import Structure
-        from pymatgen.io.vasp.sets import MPRelaxSet, MPStaticSet, MPBandStructureSet, MPDosSet
-    except ImportError:
-        return "Error: pymatgen not installed"
+        from pymatgen.io.vasp.sets import MPRelaxSet, MPStaticSet, MPNonSCFSet
+    except ImportError as e:
+        return f"Error: pymatgen not installed. Details: {str(e)}"
 
     # Check if POTCAR directory is configured
     psp_dir = os.environ.get("PMG_VASP_PSP_DIR")
@@ -311,14 +311,19 @@ def generate_vasp_input_from_structure(
     try:
         structure = Structure.from_file(structure_file_path)
 
+        # In modern pymatgen, kpoints_density -> reciprocal_density
+        # reciprocal_density is typically ~ 100 for kpoints_density ~ 0.5 1/Å
+        reciprocal_density = int(kpoints_density * 200)  # Convert 0.5 -> 100
+
+        # Our POTCAR directory has elements directly in the root (no extra POT_GGA_PAW_PBE layer)
+        # user_potcar_functional=None disables the extra directory layer
         if calculation_type == "structure_relaxation":
-            vis = MPRelaxSet(structure, kpoints_density=kpoints_density)
+            vis = MPRelaxSet(structure, reciprocal_density=reciprocal_density, user_potcar_functional=None)
         elif calculation_type == "static":
-            vis = MPStaticSet(structure, kpoints_density=kpoints_density)
-        elif calculation_type == "dos":
-            vis = MPDosSet(structure, kpoints_density=kpoints_density)
-        elif calculation_type == "band":
-            vis = MPBandStructureSet(structure, kpoints_density=kpoints_density)
+            vis = MPStaticSet(structure, reciprocal_density=reciprocal_density, user_potcar_functional=None)
+        elif calculation_type in ["dos", "band"]:
+            # For DOS and band structure calculations, use MPNonSCFSet in modern pymatgen
+            vis = MPNonSCFSet(structure, reciprocal_density=reciprocal_density, user_potcar_functional=None)
         else:
             return "Error: Unknown calculation type: " + calculation_type + ". Available: structure_relaxation, static, dos, band"
 
@@ -367,6 +372,15 @@ def generate_slurm_script(
     if not job_name:
         job_name = "vasp_calculation"
 
+    # Extract the VASP version directory from module name
+    # Module format: vasp-5.4.4-ioptcell_intelmpi2017_hdf5_libxc
+    # Full path: /public/home/scniv4a4go/apprepo/vasp/5.4.4-ioptcell_intelmpi2017_hdf5_libxc
+    vasp_dir = vasp_module.split(' ', 1)[-1] if ' ' in vasp_module else vasp_module
+    # Remove the 'vasp-' prefix if present
+    if vasp_dir.startswith('vasp-'):
+        vasp_dir = vasp_dir[5:]
+    vasp_path = f"/public/home/scniv4a4go/apprepo/vasp/{vasp_dir}"
+
     slurm_content = f"""#!/bin/bash
 #SBATCH -J {job_name}
 #SBATCH -p {partition}
@@ -375,6 +389,13 @@ def generate_slurm_script(
 
 module purge
 module load {vasp_module}
+# Source the environment script to correctly set MKL and compiler libraries (scnet.cn specific)
+source {vasp_path}/scripts/env.sh
+
+# MKL optimizations for better performance
+export MKL_DEBUG_CPU_TYPE=5
+export MKL_CBWR=AVX2
+export I_MPI_PIN_DOMAIN=numa
 
 # Increase stack size to avoid segmentation faults
 ulimit -s unlimited
@@ -437,12 +458,14 @@ def submit_vasp_job(local_input_dir: str) -> str:
         # Create job-specific directory
         ssh.exec_command(f"mkdir -p {remote_dir}")
 
-        # Verify directory was created
-        stdin, stdout, stderr = ssh.exec_command(f"ls {remote_dir}")
+        # Get absolute path (expands ~ to full path) using realpath
+        stdin, stdout, stderr = ssh.exec_command(f"realpath {remote_dir}")
         exit_code = stdout.channel.recv_exit_status()
         if exit_code != 0:
             error = stderr.read().decode()
             return f"Error: Failed to create remote directory {remote_dir}: {error}"
+        # Get absolute path (expands ~ to full path)
+        abs_remote_dir = stdout.read().decode().strip()
     except Exception as e:
         return f"Error creating remote directory: {str(e)}"
 
@@ -451,9 +474,11 @@ def submit_vasp_job(local_input_dir: str) -> str:
         for filename in os.listdir(local_input_dir):
             local_path = os.path.join(local_input_dir, filename)
             if os.path.isfile(local_path):
-                remote_path = f"{remote_dir.rstrip('/')}/{filename}"
+                # Use absolute path for SFTP to avoid ~ issues
+                remote_path = f"{abs_remote_dir.rstrip('/')}/{filename}"
                 sftp.put(local_path, remote_path)
                 uploaded.append(filename)
+        remote_dir = abs_remote_dir
     except Exception as e:
         return f"Error uploading files: {str(e)}"
 
@@ -658,8 +683,9 @@ def parse_vasp_output(outcar_path: str) -> str:
     """
     try:
         from pymatgen.io.vasp import Outcar
-    except ImportError:
-        return "Error: pymatgen not installed"
+        import numpy as np
+    except ImportError as e:
+        return f"Error: Required package not installed. Details: {str(e)}"
 
     if not os.path.exists(outcar_path):
         return f"Error: OUTCAR file not found: {outcar_path}"
@@ -680,38 +706,67 @@ def parse_vasp_output(outcar_path: str) -> str:
             summary += f"Final energy per atom: {e_per_atom:.6f} eV/atom\n"
 
         # Band gap from VASP
-        if hasattr(outcar, 'bandgap'):
-            bg = outcar.bandgap
-            summary += f"Band gap: {bg:.4f} eV\n"
-            if bg > 0:
-                summary += "  → Semiconductor/insulator\n"
-            else:
-                summary += "  → Metal\n"
+        try:
+            bg = None
+            if hasattr(outcar, 'bandgap'):
+                bg = outcar.bandgap
+            elif hasattr(outcar, 'bands') and outcar.bands is not None:
+                # Modern pymatgen stores band gap in bands object
+                bg = outcar.bands.get_gap()
+            if bg is not None:
+                summary += f"Band gap: {bg:.4f} eV\n"
+                if bg > 0:
+                    summary += "  → Semiconductor/insulator\n"
+                else:
+                    summary += "  → Metal\n"
+        except Exception:
+            # Skip band gap if not available
+            pass
 
         # Fermi level
         if hasattr(outcar, 'efermi'):
             summary += f"Fermi level: {outcar.efermi:.4f} eV\n"
 
         # Maximum force on atoms
-        if hasattr(outcar, 'forces'):
-            forces = outcar.forces
+        try:
+            forces = None
+            if hasattr(outcar, 'forces'):
+                forces = outcar.forces
+            elif hasattr(outcar, 'ionic_steps') and outcar.ionic_steps:
+                # Modern pymatgen stores forces in ionic_steps
+                last_step = outcar.ionic_steps[-1]
+                forces = last_step.get('forces', None)
             if forces is not None and len(forces) > 0:
                 force_norms = np.linalg.norm(forces, axis=1)
                 max_force = np.max(force_norms)
                 avg_force = np.mean(force_norms)
                 summary += f"Maximum force: {max_force:.6f} eV/Å\n"
                 summary += f"Average force: {avg_force:.6f} eV/Å\n"
+        except Exception:
+            # Skip forces if not available
+            pass
 
         # Magnetic moments
-        if hasattr(outcar, 'magnetization'):
-            mag = outcar.magnetization
-            if mag is not None and len(mag) > 0:
-                total_mag = sum(m[0] for m in mag)
-                summary += f"Total magnetization: {total_mag:.4f} μB\n"
+        try:
+            if hasattr(outcar, 'magnetization'):
+                mag = outcar.magnetization
+                if mag is not None and len(mag) > 0:
+                    total_mag = sum(m[0] for m in mag)
+                    summary += f"Total magnetization: {total_mag:.4f} μB\n"
+        except Exception:
+            pass
 
-        # Number of electronic steps
-        if hasattr(outcar, 'nionic_steps'):
-            summary += f"Number of ionic steps: {outcar.nionic_steps}\n"
+        # Number of ionic steps
+        try:
+            n_steps = None
+            if hasattr(outcar, 'nionic_steps'):
+                n_steps = outcar.nionic_steps
+            elif hasattr(outcar, 'ionic_steps'):
+                n_steps = len(outcar.ionic_steps)
+            if n_steps is not None:
+                summary += f"Number of ionic steps: {n_steps}\n"
+        except Exception:
+            pass
 
         return summary
     except Exception as e:

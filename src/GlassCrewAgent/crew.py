@@ -62,21 +62,20 @@ from src.GlassCrewAgent.tools.meep_tools import (
     visualize_meep_output,
 )
 
-# VASP tools removed for temporary branch
-# from src.GlassCrewAgent.tools.vasp_tools import (
-#     test_ssh_connection,
-#     list_available_partitions,
-#     get_structure_from_mp_by_id,
-#     read_poscar_from_file,
-#     generate_vasp_input_from_structure,
-#     generate_slurm_script,
-#     submit_vasp_job,
-#     check_job_status,
-#     cancel_job,
-#     download_vasp_results,
-#     parse_vasp_output,
-#     run_complete_vasp_calculation_from_mp,
-# )
+from src.GlassCrewAgent.tools.vasp_tools import (
+    test_ssh_connection,
+    list_available_partitions,
+    get_structure_from_mp_by_id,
+    read_poscar_from_file,
+    generate_vasp_input_from_structure,
+    generate_slurm_script,
+    submit_vasp_job,
+    check_job_status,
+    cancel_job,
+    download_vasp_results,
+    parse_vasp_output,
+    run_complete_vasp_calculation_from_mp,
+)
 
 
 # === LLM Configuration ===
@@ -210,27 +209,26 @@ class GlassCrew:
             tools=[]
         )
     
-    # VASP agent removed for temporary branch
-    # @agent
-    # def vasp_calculation_expert(self) -> Agent:
-    #     return Agent(
-    #         config=self.agents_config['vasp_calculation_expert'],
-    #         llm=llm,
-    #         tools=[
-    #             test_ssh_connection,
-    #             list_available_partitions,
-    #             get_structure_from_mp_by_id,
-    #             read_poscar_from_file,
-    #             generate_vasp_input_from_structure,
-    #             generate_slurm_script,
-    #             submit_vasp_job,
-    #             check_job_status,
-    #             cancel_job,
-    #             download_vasp_results,
-    #             parse_vasp_output,
-    #             run_complete_vasp_calculation_from_mp,
-    #         ]
-    #     )
+    @agent
+    def vasp_calculation_expert(self) -> Agent:
+        return Agent(
+            config=self.agents_config['vasp_calculation_expert'],
+            llm=llm,
+            tools=[
+                test_ssh_connection,
+                list_available_partitions,
+                get_structure_from_mp_by_id,
+                read_poscar_from_file,
+                generate_vasp_input_from_structure,
+                generate_slurm_script,
+                submit_vasp_job,
+                check_job_status,
+                cancel_job,
+                download_vasp_results,
+                parse_vasp_output,
+                run_complete_vasp_calculation_from_mp,
+            ]
+        )
     
     @task
     def glass_research_task(self) -> Task:

@@ -73,6 +73,8 @@ python src/GlassCrewAgent/main.py
 python -m pytest tests/test_MPtools.py -v
 python -m pytest tests/test_meep_tools.py -v
 python -m pytest tests/test_VAE_tools.py -v
+python tests/test_vasp_end_to_end.py [material_id]     # Full end-to-end VASP workflow
+python tests/test_vasp_upload_existing.py            # Test upload/submission only
 
 # Run all tests
 python -m pytest tests/ -v
@@ -137,5 +139,13 @@ Simulation outputs are stored in `output/meep_simulations/`.
   - Lorentzian dispersion model requires full complex sigma (do not extract `.real`), preserves loss information
   - Get frequency points from `mp.get_flux_freqs()`, do not manually create with `linspace` when flux data is already available
   - Validate geometry objects are within simulation cell boundaries before adding
+
+- **VASP DFT Calculation Notes (scnet.cn supercomputing)**:
+  - SFTP cannot resolve `~` home directory - always call `realpath {remote_dir}` to get absolute paths before uploading
+  - After loading VASP module, must source `env.sh` script to correctly set Intel MKL libraries (module load alone isn't sufficient)
+  - Strip `vasp-` prefix from module name to get correct directory path for `env.sh`
+  - Do NOT manually load `intel/2017` module - `env.sh` already handles Intel environment setup
+  - `PMG_VASP_PSP_DIR` must point to parent directory containing POTCAR pseudopotentials (not the potpaw subdirectory itself)
+  - Modern pymatgen Outcar API changed - use fallbacks when accessing `bandgap`, `forces`, `nionic_steps` attributes
 
 - **Testing**: After modifying tools, always run the corresponding test file: `python -m pytest tests/test_<module_name>.py -v`
