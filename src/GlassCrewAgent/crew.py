@@ -75,6 +75,10 @@ from src.GlassCrewAgent.tools.vasp_tools import (
     download_vasp_results,
     parse_vasp_output,
     run_complete_vasp_calculation_from_mp,
+    plot_energy_convergence,
+    plot_band_structure,
+    plot_density_of_states,
+    plot_vasp_summary_plots,
 )
 
 
@@ -227,6 +231,10 @@ class GlassCrew:
                 download_vasp_results,
                 parse_vasp_output,
                 run_complete_vasp_calculation_from_mp,
+                plot_energy_convergence,
+                plot_band_structure,
+                plot_density_of_states,
+                plot_vasp_summary_plots,
             ]
         )
     

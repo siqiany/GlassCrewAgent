@@ -11,18 +11,34 @@ glass_research_task:
        - For material properties (density, structure, band gap): Delegate to mp_agent
        - For generating glass compositions from optical properties: Delegate to composition_generator agent
        - For electromagnetic simulation: Delegate to fdtd_simulation_agent
+       - For first-principles DFT calculation (VASP): Delegate to vasp_calculation_expert agent
        - For validation: Delegate to reviewer agent
     3. DELEGATE: Create and assign specific sub-tasks to appropriate agents with clear instructions
     4. WAIT: Wait for all sub-agents to complete their tasks
     5. COLLECT: Gather all results from completed sub-tasks
-    6. SYNTHESIZE: Combine all findings into a comprehensive answer
-    7. OUTPUT: Provide the final answer that directly addresses the user's question
+    6. **CRITICAL DECISION POINT**: After getting initial results, ASK YOURSELF:
+       - ❓ Is the current data sufficient and reliable?
+       - ❓ Do we need higher accuracy verification with first-principles DFT?
+       - ❓ Would VASP calculation add significant value to the answer?
+       - ✅ IF ANY ANSWER IS YES: Delegate to vasp_calculation_expert for additional calculation
+    7. SYNTHESIZE: Combine all findings into a comprehensive answer
+    8. OUTPUT: Provide the final answer that directly addresses the user's question
 
-    [DECISION GUIDELINES]
+    [DECISION GUIDELINES - PROACTIVE USE OF VASP]
     - Literature queries (papers, reviews, latest research): Use searcher agent with get_paperqa
-    - Property data (density, structure, band gap): Use mp_agent with Materials Project tools
-    - Inverse design: When user wants glass compositions with specific optical properties (refractive index, Abbe number, mean dispersion), always use: searcher → mp_agent → composition_generator → fdtd_simulation_agent → reviewer → manager for final report
-    - FDTD simulation: When user wants electromagnetic simulation of glass structures (transmittance spectrum, field profiles, resonant modes), use fdtd_simulation_agent with Meep tools
+    - Property data (density, structure, band gap): Start with mp_agent, THEN CONSIDER vasp_calculation_expert for verification if accuracy matters
+    - Inverse design: When user wants glass compositions with specific optical properties, use: searcher → mp_agent → composition_generator → **vasp_calculation_expert (AUTOMATIC for top candidates)** → fdtd_simulation_agent → reviewer → manager for final report
+    - **VASP AFTER COMPOSITION GENERATION - NON-NEGOTIABLE**: After composition_generator produces candidates, you MUST run the top 1-2 candidates through vasp_calculation_expert to get first-principles verification. This is not optional - it is required for scientific rigor.
+    - FDTD simulation: When user wants electromagnetic simulation of glass structures, use fdtd_simulation_agent
+    - **VASP TRIGGER CONDITIONS - YOU SHOULD CALL VASP WHEN ANY OF THESE ARE TRUE**:
+      * User asks for "accurate", "first-principles", "DFT", or "ab initio" results
+      * Predicting properties of novel materials not in the Materials Project
+      * Need detailed band structure or density of states (DOS) analysis
+      * Need to verify or cross-check empirical predictions
+      * Calculating structure stability, formation energy, or phase information
+      * Any property where experimental data is scarce or unreliable
+      * The user's question implies high confidence is needed
+    - **DO NOT WAIT FOR USER TO SAY "VASP"**: If the problem requires accurate atomic-level calculation, initiate VASP calculation on your own initiative. This is your responsibility as a research manager.
     - Comprehensive queries: Use combination of agents as needed including reviewer for validation
 
     [KEY GLASS MATERIALS REFERENCE]

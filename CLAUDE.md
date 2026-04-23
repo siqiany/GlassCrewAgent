@@ -141,11 +141,16 @@ Simulation outputs are stored in `output/meep_simulations/`.
   - Validate geometry objects are within simulation cell boundaries before adding
 
 - **VASP DFT Calculation Notes (scnet.cn supercomputing)**:
+  - Two connection modes available: select via `VASP_CONNECTION_MODE` in .env:
+    - `ssh`: Direct SSH/SFTP connection (traditional method, keep as fallback)
+    - `api`: Supercomputing Internet official REST API (recommended, better integration)
+  - API mode requires AK/SK authentication: `SCNET_API_USER`, `SCNET_API_ACCESS_KEY`, `SCNET_API_SECRET_KEY`
   - SFTP cannot resolve `~` home directory - always call `realpath {remote_dir}` to get absolute paths before uploading
   - After loading VASP module, must source `env.sh` script to correctly set Intel MKL libraries (module load alone isn't sufficient)
   - Strip `vasp-` prefix from module name to get correct directory path for `env.sh`
   - Do NOT manually load `intel/2017` module - `env.sh` already handles Intel environment setup
   - `PMG_VASP_PSP_DIR` must point to parent directory containing POTCAR pseudopotentials (not the potpaw subdirectory itself)
   - Modern pymatgen Outcar API changed - use fallbacks when accessing `bandgap`, `forces`, `nionic_steps` attributes
+  - scnet.cn user home directory is `/public/home/{username}/` not `/home/{username}/`
 
 - **Testing**: After modifying tools, always run the corresponding test file: `python -m pytest tests/test_<module_name>.py -v`
