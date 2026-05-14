@@ -32,18 +32,15 @@ from src.GlassCrewAgent.tools.meep_tools import (
     get_simulation_output_directory
 )
 from src.GlassCrewAgent.tools.vasp_tools import (
+    # 前置检查工具
     test_ssh_connection,
     list_available_partitions,
-    get_structure_from_mp_by_id,
-    read_poscar_from_file,
-    generate_vasp_input_from_structure,
-    generate_slurm_script,
-    submit_vasp_job,
-    check_job_status,
-    cancel_job,
-    download_vasp_results,
+    # 核心高级工作流
+    run_complete_vasp_calculation_from_mp,
+    run_band_gap_calculation_from_mp,
+    # 结果处理
     parse_vasp_output,
-    run_complete_vasp_calculation_from_mp
+    plot_vasp_summary_plots,
 )
 
 __all__ = [
@@ -84,15 +81,9 @@ __all__ = [
     "get_simulation_output_directory",
     "test_ssh_connection",
     "list_available_partitions",
-    "get_structure_from_mp_by_id",
-    "read_poscar_from_file",
-    "generate_vasp_input_from_structure",
-    "generate_slurm_script",
-    "submit_vasp_job",
-    "check_job_status",
-    "cancel_job",
-    "download_vasp_results",
+    "run_complete_vasp_calculation_from_mp",
+    "run_band_gap_calculation_from_mp",
     "parse_vasp_output",
-    "run_complete_vasp_calculation_from_mp"
+    "plot_vasp_summary_plots",
 ]
 

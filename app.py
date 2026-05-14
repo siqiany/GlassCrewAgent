@@ -9,7 +9,7 @@ import sys
 import json
 import threading
 import uuid
-from flask import Flask, render_template, request, jsonify, Response
+from flask import Flask, render_template, request, jsonify, Response,logging
 from flask_cors import CORS
 
 # 添加项目根目录到 Python 路径
@@ -214,6 +214,8 @@ def ask():
         'events': [],
         'stream_queue': __import__('queue').Queue()
     }
+
+    logging.info("successfully create crewtask")
     
     # 在后台线程中启动任务
     thread = threading.Thread(target=run_crew_task, args=(task_id, user_input))

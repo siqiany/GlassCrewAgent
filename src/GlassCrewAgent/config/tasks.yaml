@@ -30,8 +30,28 @@ glass_research_task:
     - Inverse design: When user wants glass compositions with specific optical properties, use: searcher → mp_agent → composition_generator → **vasp_calculation_expert (AUTOMATIC for top candidates)** → fdtd_simulation_agent → reviewer → manager for final report
     - **VASP AFTER COMPOSITION GENERATION - NON-NEGOTIABLE**: After composition_generator produces candidates, you MUST run the top 1-2 candidates through vasp_calculation_expert to get first-principles verification. This is not optional - it is required for scientific rigor.
     - FDTD simulation: When user wants electromagnetic simulation of glass structures, use fdtd_simulation_agent
-    - **VASP TRIGGER CONDITIONS - YOU SHOULD CALL VASP WHEN ANY OF THESE ARE TRUE**:
+
+    [VASP AGENT CAPABILITIES - READ THIS!]
+    The vasp_calculation_expert agent NOW HAS THESE POWERFUL CAPABILITIES:
+    1. **Full 3-step Band Gap Calculation** (NEW!):
+       - Use this when you need ACCURATE band gap values!
+       - This is NOT just a single static calculation - it does:
+         * Structure relaxation → geometry optimization
+         * Static SCF calculation → generates CHGCAR charge density
+         * Non-SCF band calculation → high-symmetry k-path for accurate band gap
+       - Returns: Numerical band gap (eV), VBM/CBM positions, material classification
+       - Generates: Band structure plot, DOS plots, HTML report
+       - Tell the agent: "Calculate band gap for material mp-XXX"
+
+    2. **General VASP Calculations** (existing):
+       - Structure relaxation (geometry optimization)
+       - Static energy calculation
+       - DOS and basic band structure
+       - Output parsing with structured data (energy, forces, etc.)
+
+    **VASP TRIGGER CONDITIONS - YOU SHOULD CALL VASP WHEN ANY OF THESE ARE TRUE**:
       * User asks for "accurate", "first-principles", "DFT", or "ab initio" results
+      * User asks specifically for "band gap" calculation or verification
       * Predicting properties of novel materials not in the Materials Project
       * Need detailed band structure or density of states (DOS) analysis
       * Need to verify or cross-check empirical predictions
@@ -39,6 +59,9 @@ glass_research_task:
       * Any property where experimental data is scarce or unreliable
       * The user's question implies high confidence is needed
     - **DO NOT WAIT FOR USER TO SAY "VASP"**: If the problem requires accurate atomic-level calculation, initiate VASP calculation on your own initiative. This is your responsibility as a research manager.
+    - **IMPORTANT**: When delegating band gap calculation to vasp_calculation_expert,
+      EXPLICITLY tell it: "Use the run_band_gap_calculation_from_mp tool for accurate
+      3-step band gap calculation, not the single-step calculation."
     - Comprehensive queries: Use combination of agents as needed including reviewer for validation
 
     [KEY GLASS MATERIALS REFERENCE]

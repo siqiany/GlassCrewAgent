@@ -25,7 +25,10 @@ GlassCrewAgent/
 │       ├── MPtools.py       # Materials Project API integration
 │       ├── VAE_tools.py     # CVAE-based glass composition generation
 │       ├── meep_tools.py    # FDTD simulation with Meep
-│       ├── vasp_tools.py    # VASP DFT calculations on supercomputing clusters
+│       ├── vasp_tools.py    # VASP entry point (only exports 6 high-level tools)
+│       ├── vasp_platform.py # VASP platform layer (SSH/API, file transfer, jobs)
+│       ├── vasp_simulation.py # VASP simulation layer (structure, input generation, workflows)
+│       ├── vasp_analysis.py # VASP analysis layer (parsing, plotting, reports)
 │       ├── qdrant_search_tool.py  # Semantic search on local paper corpus
 │       └── generalCommon.py # arXiv search and PDF reading
 ├── tests/                    # Test files for each tool module
@@ -49,6 +52,11 @@ GlassCrewAgent/
 This project uses a conda virtual environment named `GlassCrewAgent`:
 ```bash
 conda activate GlassCrewAgent
+```
+
+**Always use conda run for one-off commands**:
+```bash
+conda run -n GlassCrewAgent python script.py
 ```
 
 ### Install Dependencies
@@ -141,6 +149,46 @@ Simulation outputs are stored in `output/meep_simulations/`.
   - Validate geometry objects are within simulation cell boundaries before adding
 
 - **VASP DFT Calculation Notes (scnet.cn supercomputing)**:
+  - **Four-Layer Architecture**: VASP tools have been refactored into 4 modules for better maintainability and clean API:
+    - `vasp_platform.py` - Platform layer: SSH/API connectivity, file transfer, job submission/monitoring
+    - `vasp_simulation.py` - Simulation layer: Structure retrieval, input file generation, end-to-end workflows
+    - `vasp_analysis.py` - Analysis layer: Output parsing, 9+ plot types (DOS, band structure, convergence), HTML reports
+    - `vasp_tools.py` - **Entry layer (100 lines)**: Clean facade exposing ONLY 6 high-level tools to agents
+  - **Tool Simplification**: VASP agent tools reduced from 18+ granular tools to 6 high-level workflow tools:
+    1. `test_ssh_connection` - Pre-check: Test SSH/API connectivity
+    2. `list_available_partitions` - Pre-check: List available Slurm partitions
+    3. `run_complete_vasp_calculation_from_mp` - One-click: Structure → Submit → Results
+    4. `run_band_gap_calculation_from_mp` - One-click: Relaxation → SCF → Band structure
+    5. `parse_vasp_output` - Post-process: Parse OUTCAR file
+    6. `plot_vasp_summary_plots` - Post-process: Generate all summary plots + HTML report
+  - **@tool Call Pattern**: Inside high-level workflow functions, NEVER call `@tool` decorated functions directly, use `.func()`:
+    ```python
+    # ❌ WRONG: Direct call fails (function is wrapped as Tool object)
+    result = get_structure_from_mp_by_id(material_id)
+    
+    # ✅ CORRECT: Call the underlying function
+    result = get_structure_from_mp_by_id.func(material_id)
+    
+    # ✅ OR: Use helper function (defined in vasp_simulation.py)
+    result = _call_tool(get_structure_from_mp_by_id, material_id)
+    ```
+  - **Accurate Band Gap Calculation**: Use `run_band_gap_calculation_from_mp(material_id)` for proper band gap:
+    - Step 1: Structure relaxation (geometry optimization)
+    - Step 2: Static SCF calculation (generates CHGCAR charge density)
+    - Step 3: Non-SCF band structure calculation on high-symmetry k-path
+    - Returns numerical band gap value, VBM/CBM, and material classification
+    - ❌ Do NOT use single-step static calculation for band gap - it won't give accurate results!
+  - **Structured Output Parsing**: `_parse_vasp_output_structured(outcar_path)` returns dictionary with:
+    - `band_gap`, `final_energy`, `fermi_level`, `max_force`, `energy_per_atom`, etc.
+    - Use this instead of string parsing when you need numerical values for decision making
+  - **Band Structure KPOINTS**: For non-SCF band structure, ALWAYS use `Kpoints.automatic_linemode(divisions=20, ibz=kpath)` not explicit Reciprocal k-points.
+    - VASP 5.4 reads k-points with fixed-width `(3F20.16)` — float64 scientific notation (24 chars) exceeds 20-char field, causing "Error reading KPOINTS file"
+    - Example: `kpath = HighSymmKpath(structure); band_kpoints = Kpoints.automatic_linemode(divisions=20, ibz=kpath)`
+  - **Band Gap Retrieval**: Most reliable source is static SCF `vasprun.xml` via `Vasprun.get_band_structure().get_band_gap()['energy']`
+    - Modern pymatgen OUTCAR no longer has `outcar.bandgap` or `outcar.bands` — do NOT rely on these attributes
+    - Non-SCF band structure EIGENVAL has smeared Fermi level (ISMEAR=0), making gap detection unreliable
+  - **Eigenval Import**: `from pymatgen.io.vasp.outputs import Eigenval` (moved from `pymatgen.io.vasp` in newer versions)
+  - **EIGENVAL Array Shape**: eigenvalues are `(nkpts, nbands, 2)` — last dim is [real, imag]; use `[:,:,0]` for real part
   - Two connection modes available: select via `VASP_CONNECTION_MODE` in .env:
     - `ssh`: Direct SSH/SFTP connection (traditional method, keep as fallback)
     - `api`: Supercomputing Internet official REST API (recommended, better integration)
@@ -152,5 +200,6 @@ Simulation outputs are stored in `output/meep_simulations/`.
   - `PMG_VASP_PSP_DIR` must point to parent directory containing POTCAR pseudopotentials (not the potpaw subdirectory itself)
   - Modern pymatgen Outcar API changed - use fallbacks when accessing `bandgap`, `forces`, `nionic_steps` attributes
   - scnet.cn user home directory is `/public/home/{username}/` not `/home/{username}/`
+  - **Circular Import Note**: `__init__.py` imports can cause circular import errors during refactoring
 
 - **Testing**: After modifying tools, always run the corresponding test file: `python -m pytest tests/test_<module_name>.py -v`

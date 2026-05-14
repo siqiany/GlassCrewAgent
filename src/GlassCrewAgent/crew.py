@@ -63,21 +63,14 @@ from src.GlassCrewAgent.tools.meep_tools import (
 )
 
 from src.GlassCrewAgent.tools.vasp_tools import (
+    # 前置检查工具
     test_ssh_connection,
     list_available_partitions,
-    get_structure_from_mp_by_id,
-    read_poscar_from_file,
-    generate_vasp_input_from_structure,
-    generate_slurm_script,
-    submit_vasp_job,
-    check_job_status,
-    cancel_job,
-    download_vasp_results,
-    parse_vasp_output,
+    # 核心高级工作流
     run_complete_vasp_calculation_from_mp,
-    plot_energy_convergence,
-    plot_band_structure,
-    plot_density_of_states,
+    run_band_gap_calculation_from_mp,
+    # 结果处理
+    parse_vasp_output,
     plot_vasp_summary_plots,
 )
 
@@ -219,22 +212,17 @@ class GlassCrew:
             config=self.agents_config['vasp_calculation_expert'],
             llm=llm,
             tools=[
-                test_ssh_connection,
-                list_available_partitions,
-                get_structure_from_mp_by_id,
-                read_poscar_from_file,
-                generate_vasp_input_from_structure,
-                generate_slurm_script,
-                submit_vasp_job,
-                check_job_status,
-                cancel_job,
-                download_vasp_results,
-                parse_vasp_output,
-                run_complete_vasp_calculation_from_mp,
-                plot_energy_convergence,
-                plot_band_structure,
-                plot_density_of_states,
-                plot_vasp_summary_plots,
+                # ===== 前置检查工具 =====
+                test_ssh_connection,       # 测试连接
+                list_available_partitions, # 查看可用分区
+
+                # ===== 核心高级工作流 =====
+                run_complete_vasp_calculation_from_mp,  # 一键完成计算
+                run_band_gap_calculation_from_mp,       # 一键带隙计算
+
+                # ===== 结果处理 =====
+                parse_vasp_output,         # 解析输出
+                plot_vasp_summary_plots,   # 一键绘图（包含 DOS + band structure + convergence）
             ]
         )
     

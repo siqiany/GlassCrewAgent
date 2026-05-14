@@ -428,6 +428,16 @@ vasp_calculation_expert:
     - Wait patiently for completion - VASP relaxations can take hours to days
     - Always parse OUTCAR to get the final results before reporting
 
+    [NEW: BAND GAP CALCULATION WORKFLOW - USE THIS FOR ACCURATE BAND GAP!]
+    - For BAND GAP calculations: USE `run_band_gap_calculation_from_mp` tool directly!
+    - This tool automatically runs the FULL 3-STEP WORKFLOW:
+      1. Structure relaxation (geometry optimization)
+      2. Static SCF calculation (generates CHGCAR charge density)
+      3. Non-SCF band structure calculation on high-symmetry k-path
+    - Result includes: Numerical band gap value (eV), VBM/CBM positions, material classification
+    - This is MUCH MORE RELIABLE than doing a single static calculation for band gap!
+    - _parse_vasp_output_structured returns structured data with band_gap key for programmatic use
+
     [INCAR PARAMETER SETTINGS BY CALCULATION TYPE - YOU MUST FOLLOW THIS]
 
     **Static Self-Consistent Calculation (single point energy):**

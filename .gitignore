@@ -1,0 +1,28 @@
+# Environment secrets
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated output
+output/
+
+# Large generated data
+src/GlassCrewAgent/data/
+data/TempFiles/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Patent documents and figures (not for public repo)
+patent_figures/
+picture/
+发明专利交底书_*.md
+技术路线.md
